@@ -280,7 +280,7 @@ export async function runMigrations() {
       CREATE TABLE IF NOT EXISTS branches (
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(120) NOT NULL UNIQUE,
-        address TEXT NOT NULL DEFAULT '',
+        address TEXT NOT NULL,
         lat DOUBLE NOT NULL DEFAULT 0,
         lng DOUBLE NOT NULL DEFAULT 0,
         is_active TINYINT(1) NOT NULL DEFAULT 1,
