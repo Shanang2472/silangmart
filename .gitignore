@@ -1,0 +1,15 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+certs/
+.certs/
+uploads/
+.agents/
+/silang_mini_mart.sql
+/add_supplier_account.sql
+/insert_rider_user.sql

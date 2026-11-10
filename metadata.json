@@ -1,0 +1,6 @@
+{
+  "name": "Silang Mini Mart",
+  "description": "Point of Sale (POS), Inventory Management, and Delivery Tracking for Silang Mini Mart branches.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
