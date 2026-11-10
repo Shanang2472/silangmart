@@ -5,7 +5,7 @@
 
 import React from 'react';
 
-const STORE_BG_IMAGE_URL = '/uploads/store-pictures/store-1783745792232-4766ab9458813.webp';
+const STORE_BG_IMAGE_URL = '/store-background.webp';
 
 type LandingPageProps = {
   onOpenLogin?: (opts: { defaultTab: 'admin' | 'customer' | 'rider' | 'supplier'; defaultMode?: 'login' | 'register' }) => void;
@@ -53,7 +53,7 @@ export default function LandingPage({ onOpenLogin }: LandingPageProps) {
               <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md shadow-orange-500/20 tracking-tighter overflow-hidden bg-white/10 border border-white/10">
                 <img
-                  src="/uploads/store-pictures/silanglogo.png"
+                  src="/store-logo.png"
                   alt="Silang Mini Mart"
                   className="w-full h-full object-contain"
                   draggable={false}
@@ -367,5 +367,4 @@ export default function LandingPage({ onOpenLogin }: LandingPageProps) {
     </div>
   );
 }
-
 
