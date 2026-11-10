@@ -10,7 +10,7 @@ router.get('/staff', async (_req, res) => {
   try {
     const pool = getPool();
     const [rows]: any = await pool.query(
-      'SELECT id, name, role FROM users WHERE role IN ("admin", "cashier", "rider") AND status = "active" ORDER BY name ASC'
+      `SELECT id, name, role FROM users WHERE role IN ('admin', 'cashier', 'rider') AND status = 'active' ORDER BY name ASC`
     );
     res.json({ staff: rows });
   } catch (e: any) {

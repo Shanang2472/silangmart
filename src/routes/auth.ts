@@ -19,7 +19,7 @@ router.post('/login', async (req, res) => {
 
     if (role === 'admin' || role === 'cashier') {
       const [rows]: any = await pool.query(
-        'SELECT username, name, password, role FROM users WHERE (username = ? OR name = ?) AND (role = "admin" OR role = "cashier") AND status = "active"',
+        `SELECT username, name, password, role FROM users WHERE (username = ? OR name = ?) AND (role = 'admin' OR role = 'cashier') AND status = 'active'`,
         [trimmedName, trimmedName]
       );
 
@@ -73,7 +73,7 @@ router.post('/login', async (req, res) => {
 
     if (role === 'supplier') {
       const [rows]: any = await pool.query(
-        'SELECT username, name, password FROM users WHERE (username = ? OR name = ?) AND role = "supplier" AND status = "active"',
+        `SELECT username, name, password FROM users WHERE (username = ? OR name = ?) AND role = 'supplier' AND status = 'active'`,
         [trimmedName, trimmedName]
       );
       if (rows.length === 0) return res.status(401).json({ error: 'Hindi mahanap ang Supplier account!' });
@@ -85,7 +85,7 @@ router.post('/login', async (req, res) => {
 
     if (role === 'rider') {
       const [rows]: any = await pool.query(
-        'SELECT username, name, password FROM users WHERE (username = ? OR name = ?) AND role = "rider" AND status = "active"',
+        `SELECT username, name, password FROM users WHERE (username = ? OR name = ?) AND role = 'rider' AND status = 'active'`,
         [trimmedName, trimmedName]
       );
 
@@ -135,7 +135,7 @@ router.post('/verify', async (req, res) => {
     // For admin/cashier tokens (token role is always 'admin' internally)
     if (payload.role === 'admin') {
       const [rows]: any = await pool.query(
-        'SELECT username, name, role, status FROM users WHERE username = ? AND status = "active"',
+        `SELECT username, name, role, status FROM users WHERE username = ? AND status = 'active'`,
         [payload.username]
       );
       if (rows.length === 0) {
@@ -148,7 +148,7 @@ router.post('/verify', async (req, res) => {
     // For supplier tokens
     if (payload.role === 'supplier') {
       const [rows]: any = await pool.query(
-        'SELECT username, name, role, status FROM users WHERE username = ? AND role = "supplier" AND status = "active"',
+        `SELECT username, name, role, status FROM users WHERE username = ? AND role = 'supplier' AND status = 'active'`,
         [payload.username]
       );
       if (rows.length === 0) return res.status(401).json({ ok: false, error: 'Supplier account not found or deactivated.' });
@@ -159,7 +159,7 @@ router.post('/verify', async (req, res) => {
     // For rider tokens
     if (payload.role === 'rider') {
       const [rows]: any = await pool.query(
-        'SELECT username, name, role, status FROM users WHERE username = ? AND role = "rider" AND status = "active"',
+        `SELECT username, name, role, status FROM users WHERE username = ? AND role = 'rider' AND status = 'active'`,
         [payload.username]
       );
       if (rows.length === 0) {
