@@ -3,8 +3,8 @@ import { getPool } from '../db/mysql';
 import { generateToken } from '../utils/authHelper';
 import { requireAuth, AuthenticatedRequest } from '../utils/authMiddleware';
 import multer from 'multer';
-import crypto from 'crypto';
 import { storeImage } from '../utils/imageStorage';
+import { hashPassword } from '../utils/passwordHash';
 
 
 const router = express.Router();
@@ -80,19 +80,14 @@ router.post('/', async (req, res) => {
     // Normalize password/PIN: remove spaces (e.g., accidental multi-word input)
     const passwordCandidate = normalizedPassword;
 
-    // Determine if it's a simple 4-digit PIN or a full password
-    const isSimplePin = /^\d{4}$/.test(passwordCandidate);
-    const pinValue = isSimplePin ? passwordCandidate : ''; // store plain PIN only for 4-digit numeric ones
-    const passwordHashValue = !isSimplePin
-      ? crypto.createHash('sha256').update(passwordCandidate).digest('hex')
-      : null; // hash for full passwords
+    const passwordHashValue = await hashPassword(passwordCandidate);
 
     const pool = getPool();
 
     const [result] = await pool.query(
       `INSERT INTO customers (name, phone, pin, password_hash, store_image, barangay, address, lat, lng)
        VALUES (?,?,?,?,?,?,?,?,?)`,
-      [name, phone, pinValue, passwordHashValue, storeImage, barangay, address, lat, lng]
+      [name, phone, '', passwordHashValue, storeImage, barangay, address, lat, lng]
     );
 
     const customerId = (result as any).insertId;
@@ -158,19 +153,8 @@ router.put('/profile', requireAuth, async (req: AuthenticatedRequest, res) => {
     const params: any[] = [phone, barangay, address, lat, lng, storeImage];
 
     if (normalizedPassword && normalizedPassword.length >= 4) {
-      const crypto = await import('crypto');
-      const isSimplePin = /^\d{4}$/.test(normalizedPassword);
-
-      if (isSimplePin) {
-        // Store as plain 4-digit PIN, clear any previous full password hash
-        updateQuery += `, pin = ?, password_hash = NULL`;
-        params.push(normalizedPassword);
-      } else {
-        // Store as SHA-256 hash, clear the plain PIN
-        const hashed = crypto.createHash('sha256').update(normalizedPassword).digest('hex');
-        updateQuery += `, pin = '', password_hash = ?`;
-        params.push(hashed);
-      }
+      updateQuery += `, pin = '', password_hash = ?`;
+      params.push(await hashPassword(normalizedPassword));
     }
 
     updateQuery += ` WHERE name = ?`;

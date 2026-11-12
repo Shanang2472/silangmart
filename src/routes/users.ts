@@ -1,6 +1,7 @@
 import express from 'express';
 import { getPool } from '../db/mysql';
 import { requireAuth, requireRole, AuthenticatedRequest } from '../utils/authMiddleware';
+import { hashPassword } from '../utils/passwordHash';
 
 const router = express.Router();
 
@@ -74,7 +75,7 @@ router.post('/', requireAuth, requireRole(['admin']), async (req, res) => {
 
     const [result]: any = await pool.query(
       'INSERT INTO users (name, username, password, role, status) VALUES (?, ?, ?, ?, "active")',
-      [trimmedName, trimmedUsername, trimmedPassword, role]
+      [trimmedName, trimmedUsername, await hashPassword(trimmedPassword), role]
     );
 
     res.json({ ok: true, id: result.insertId, message: 'User registered successfully!' });

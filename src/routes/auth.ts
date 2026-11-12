@@ -1,6 +1,7 @@
 import express from 'express';
 import { getPool } from '../db/mysql';
 import { generateToken, verifyToken } from '../utils/authHelper';
+import { hashPassword, isScryptHash, verifyPassword } from '../utils/passwordHash';
 
 const router = express.Router();
 
@@ -28,8 +29,16 @@ router.post('/login', async (req, res) => {
       }
 
       const user = rows[0];
-      if (user.password !== pin) {
+      if (!await verifyPassword(pin, user.password)) {
         return res.status(401).json({ error: 'Maling password para sa Staff!' });
+      }
+      if (!isScryptHash(user.password)) {
+        const passwordHash = await hashPassword(pin);
+        await pool.query('UPDATE users SET password = ? WHERE username = ? AND password = ?', [
+          passwordHash,
+          user.username,
+          user.password,
+        ]);
       }
 
       const username = user.username;
@@ -56,14 +65,27 @@ router.post('/login', async (req, res) => {
       // Normalize login PIN/Password (strip all spaces)
       const normalizedPin = pin.replace(/\s+/g, '');
 
-      // Allow login via plain PIN OR via hashed password
-      const pinMatch = customer.pin && customer.pin === normalizedPin;
-      const crypto = await import('crypto');
-      const hashMatch = customer.password_hash &&
-        customer.password_hash === crypto.createHash('sha256').update(normalizedPin).digest('hex');
+      const pinMatch = Boolean(customer.pin) && await verifyPassword(normalizedPin, customer.pin);
+      const hashMatch = Boolean(customer.password_hash) && await verifyPassword(normalizedPin, customer.password_hash);
 
       if (!pinMatch && !hashMatch) {
         return res.status(401).json({ error: 'Maling PIN o Password para sa Customer!' });
+      }
+      if (pinMatch && !isScryptHash(customer.pin)) {
+        const passwordHash = await hashPassword(normalizedPin);
+        await pool.query('UPDATE customers SET pin = ? WHERE name = ? AND pin = ?', [
+          passwordHash,
+          customer.name,
+          customer.pin,
+        ]);
+      }
+      if (hashMatch && !isScryptHash(customer.password_hash)) {
+        const passwordHash = await hashPassword(normalizedPin);
+        await pool.query('UPDATE customers SET password_hash = ? WHERE name = ? AND password_hash = ?', [
+          passwordHash,
+          customer.name,
+          customer.password_hash,
+        ]);
       }
 
       const username = customer.name.toLowerCase().split(' ')[0];
@@ -78,7 +100,15 @@ router.post('/login', async (req, res) => {
       );
       if (rows.length === 0) return res.status(401).json({ error: 'Hindi mahanap ang Supplier account!' });
       const user = rows[0];
-      if (user.password !== pin) return res.status(401).json({ error: 'Maling PIN para sa Supplier!' });
+      if (!await verifyPassword(pin, user.password)) return res.status(401).json({ error: 'Maling PIN para sa Supplier!' });
+      if (!isScryptHash(user.password)) {
+        const passwordHash = await hashPassword(pin);
+        await pool.query('UPDATE users SET password = ? WHERE username = ? AND password = ?', [
+          passwordHash,
+          user.username,
+          user.password,
+        ]);
+      }
       const token = generateToken({ username: user.username, role: 'supplier', name: user.name });
       return res.json({ ok: true, token, user: { username: user.username, role: 'supplier', name: user.name } });
     }
@@ -94,8 +124,16 @@ router.post('/login', async (req, res) => {
       }
 
       const user = rows[0];
-      if (user.password !== pin) {
+      if (!await verifyPassword(pin, user.password)) {
         return res.status(401).json({ error: 'Maling PIN para sa Delivery Rider!' });
+      }
+      if (!isScryptHash(user.password)) {
+        const passwordHash = await hashPassword(pin);
+        await pool.query('UPDATE users SET password = ? WHERE username = ? AND password = ?', [
+          passwordHash,
+          user.username,
+          user.password,
+        ]);
       }
 
       const username = user.username;

@@ -1,6 +1,7 @@
 import mysql from 'mysql2/promise';
 import fs from 'fs';
 import path from 'path';
+import { hashPassword, isScryptHash } from '../utils/passwordHash';
 
 type DbConfig = {
   host: string;
@@ -179,8 +180,12 @@ export async function runMigrations() {
       console.log('Seeding default staff and rider users...');
       await activePool.query(
         `INSERT INTO users (name, username, password, role, status) VALUES 
-         ('AdminSilang', 'admin', 'admin', 'admin', 'active'),
-         ('RiderSilang', 'rider', '1234', 'rider', 'active')`
+         (?, ?, ?, ?, 'active'),
+         (?, ?, ?, ?, 'active')`,
+        [
+          'AdminSilang', 'admin', await hashPassword('admin'), 'admin',
+          'RiderSilang', 'rider', await hashPassword('1234'), 'rider',
+        ]
       );
     }
   } catch (err) {
@@ -595,5 +600,37 @@ export async function runMigrations() {
     console.log('Migration 16: role-scoped notification storage ready.');
   } catch (err) {
     console.error('Migration error for role-scoped notifications:', err);
+  }
+
+  const [userRows]: any = await activePool.query('SELECT id, password FROM users');
+  let migratedUserPasswords = 0;
+  for (const user of userRows) {
+    if (isScryptHash(user.password)) continue;
+    const passwordHash = await hashPassword(String(user.password));
+    const [result]: any = await activePool.query(
+      'UPDATE users SET password = ? WHERE id = ? AND password = ?',
+      [passwordHash, user.id, user.password]
+    );
+    migratedUserPasswords += Number(result.affectedRows || 0);
+  }
+
+  const [customerRows]: any = await activePool.query(
+    `SELECT id, pin FROM customers WHERE pin IS NOT NULL AND pin <> ''`
+  );
+  let migratedCustomerPins = 0;
+  for (const customer of customerRows) {
+    if (isScryptHash(customer.pin)) continue;
+    const passwordHash = await hashPassword(String(customer.pin));
+    const [result]: any = await activePool.query(
+      'UPDATE customers SET pin = ? WHERE id = ? AND pin = ?',
+      [passwordHash, customer.id, customer.pin]
+    );
+    migratedCustomerPins += Number(result.affectedRows || 0);
+  }
+
+  if (migratedUserPasswords || migratedCustomerPins) {
+    console.log(
+      `Credential migration: hashed ${migratedUserPasswords} staff/supplier passwords and ${migratedCustomerPins} customer PINs.`
+    );
   }
 }
