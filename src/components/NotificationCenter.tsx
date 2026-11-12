@@ -177,35 +177,35 @@ function SoundEnablePrompt({ onEnable, onDismiss }: SoundPromptProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
-      className="fixed bottom-20 right-4 z-[110] max-w-xs overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 p-4 text-white shadow-2xl"
+      className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-3 right-3 z-[110] overflow-hidden rounded-2xl border border-orange-200 bg-white p-4 text-slate-900 shadow-2xl sm:left-auto sm:right-4 sm:max-w-sm"
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-950/30">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-950/20">
             <Volume2 className="h-4.5 w-4.5" />
           </div>
           <div>
-            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-orange-300">Live alerts sa device</p>
-            <p className="text-[11px] font-bold text-white">I-on ang tunog ng notification?</p>
+            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-orange-600">Live alerts sa device</p>
+            <p className="text-[11px] font-bold text-slate-900">I-on ang tunog ng notification?</p>
           </div>
         </div>
-        <button onClick={onDismiss} className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white cursor-pointer" aria-label="Isara">
+        <button onClick={onDismiss} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer" aria-label="Isara">
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
-      <p className="text-[10px] leading-relaxed text-slate-300">Makakarinig ka ng alert kapag may bagong order, delivery update, o mahalagang abiso para sa account mo.</p>
-      <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-3">
-        <span className="text-[9px] font-semibold text-slate-400">Local prompt · hindi ito system-wide</span>
+      <p className="text-[10px] leading-relaxed text-slate-600">Makakarinig ka ng alert kapag may bagong order, delivery update, o mahalagang abiso para sa account mo.</p>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-orange-100 pt-3">
+        <span className="text-[9px] font-semibold text-slate-500">Local prompt · hindi ito system-wide</span>
         <div className="flex items-center gap-2">
           <button
             onClick={onEnable}
-            className="rounded-lg bg-orange-500 px-3 py-1.5 text-[9px] font-black uppercase tracking-wide text-white transition-colors hover:bg-orange-400 cursor-pointer"
+            className="rounded-lg bg-orange-500 px-3 py-1.5 text-[9px] font-black uppercase tracking-wide text-white transition-colors hover:bg-orange-600 cursor-pointer"
           >
             I-on
           </button>
           <button
             onClick={onDismiss}
-            className="text-[9px] font-bold uppercase text-slate-400 hover:text-white cursor-pointer"
+            className="text-[9px] font-bold uppercase text-slate-500 hover:text-slate-800 cursor-pointer"
           >
             Mamaya
           </button>

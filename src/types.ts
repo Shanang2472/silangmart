@@ -94,6 +94,10 @@ export interface Delivery {
     name: string;
     quantity: number;
     price: number;
+    batchNumber?: string;
+    expiryDate?: string;
+    supplierName?: string;
+    authenticityStatus?: Product['authenticityStatus'];
   }[];
   deliveryFee: number;
   totalAmount: number;

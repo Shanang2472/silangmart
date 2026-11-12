@@ -571,9 +571,20 @@ export default function RiderDashboard({
                     <div className="space-y-1 max-h-24 overflow-y-auto no-scrollbar bg-slate-950/20 p-2 rounded border border-slate-800/50">
                       <p className="text-[8px] text-slate-400 font-extrabold uppercase tracking-widest mb-1">MGA PRODUKTONG IHATID:</p>
                       {activeOrder.items.map((it, idx) => (
-                        <div key={idx} className="flex justify-between text-[10px] text-slate-300">
-                          <span className="truncate pr-2">{it.name}</span>
-                          <span className="font-mono text-slate-400 shrink-0">x{it.quantity}</span>
+                        <div key={idx} className="text-[10px] text-slate-300">
+                          <div className="flex justify-between">
+                            <span className="truncate pr-2">{it.name}</span>
+                            <span className="font-mono text-slate-400 shrink-0">x{it.quantity}</span>
+                          </div>
+                          <p className={`mt-0.5 text-[9px] ${
+                            it.authenticityStatus === 'verified' && it.expiryDate && it.expiryDate >= new Date().toISOString().slice(0, 10) && it.supplierName && it.batchNumber
+                              ? 'text-emerald-300'
+                              : 'text-amber-300'
+                          }`}>
+                            {it.authenticityStatus === 'verified' ? 'Verified' : 'Hindi verified'} ·
+                            {' '}{it.expiryDate ? `Expiry ${it.expiryDate}` : 'Walang expiry date'} ·
+                            {' '}{it.supplierName || 'Walang supplier'} · Lot {it.batchNumber || 'Wala'}
+                          </p>
                         </div>
                       ))}
                     </div>

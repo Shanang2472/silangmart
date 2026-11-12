@@ -332,17 +332,25 @@ export default function DeliveryTracker({
                           <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Detalye ng Order:</p>
                           <div className="space-y-1.5 bg-slate-50 rounded-xl p-3">
                             {order.items.map((item, i) => (
-                              <div key={i} className="flex justify-between items-center text-xs">
-                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                  <span className="w-5 h-5 bg-orange-100 text-orange-600 rounded text-[9px] font-extrabold flex items-center justify-center shrink-0">
-                                    {item.quantity}×
-                                  </span>
-                                  <span className="font-medium text-slate-700 truncate">{item.name}</span>
+                              <div key={i} className="space-y-1">
+                                <div className="flex justify-between items-center text-xs">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <span className="w-5 h-5 bg-orange-100 text-orange-600 rounded text-[9px] font-extrabold flex items-center justify-center shrink-0">
+                                      {item.quantity}×
+                                    </span>
+                                    <span className="font-medium text-slate-700 truncate">{item.name}</span>
+                                  </div>
+                                  <div className="text-right shrink-0 ml-2">
+                                    <span className="font-mono text-slate-500 text-[10px]">₱{item.price.toFixed(2)} ea.</span>
+                                    <span className="font-mono font-extrabold text-slate-800 ml-2">₱{(item.price * item.quantity).toFixed(2)}</span>
+                                  </div>
                                 </div>
-                                <div className="text-right shrink-0 ml-2">
-                                  <span className="font-mono text-slate-500 text-[10px]">₱{item.price.toFixed(2)} ea.</span>
-                                  <span className="font-mono font-extrabold text-slate-800 ml-2">₱{(item.price * item.quantity).toFixed(2)}</span>
-                                </div>
+                                <p className="pl-7 text-[9px] text-slate-500">
+                                  {item.authenticityStatus === 'verified' ? 'Verified' : 'Unverified'} ·
+                                  {' '}Expiry: {item.expiryDate || 'not recorded'} ·
+                                  {' '}Supplier: {item.supplierName || 'not recorded'} ·
+                                  {' '}Lot: {item.batchNumber || 'not recorded'}
+                                </p>
                               </div>
                             ))}
                             <div className="border-t border-slate-200 pt-1.5 mt-1 space-y-0.5">

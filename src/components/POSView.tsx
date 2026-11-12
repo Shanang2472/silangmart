@@ -180,10 +180,13 @@ export default function POSView({
 
     const unavailableItem = cart.find(item =>
       getProductExpiryStatus(item.product.expiryDate) === 'expired' ||
-      item.product.authenticityStatus === 'rejected'
+      getProductExpiryStatus(item.product.expiryDate) === 'unknown' ||
+      item.product.authenticityStatus !== 'verified' ||
+      !item.product.supplierName?.trim() ||
+      !item.product.batchNumber?.trim()
     );
     if (unavailableItem) {
-      alert(`Hindi maaaring i-checkout ang expired o tinanggihang produkto: ${unavailableItem.product.name}.`);
+      alert(`Hindi maaaring i-checkout ang ${unavailableItem.product.name}. Kailangan ng valid na expiry date at verified na supplier/batch record.`);
       return;
     }
 

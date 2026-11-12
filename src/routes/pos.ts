@@ -141,7 +141,9 @@ router.post('/checkout', requireAuth, requireRole(['admin']), async (req, res) =
     // Server-side authoritative validation & calculation
     const productIds = items.map((it: any) => it.productId);
     const [dbProducts]: any = await conn.query(
-      `SELECT id, name, price, unit, authenticity_status, expiry_date < CURDATE() AS is_expired FROM products WHERE id IN (?)`,
+      `SELECT id, name, price, unit, batch_number, supplier_name, authenticity_status, expiry_date,
+              expiry_date < CURDATE() AS is_expired
+       FROM products WHERE id IN (?)`,
       [productIds]
     );
     const productMap = new Map<string, any>(dbProducts.map((p: any) => [p.id, p]));
@@ -166,8 +168,15 @@ router.post('/checkout', requireAuth, requireRole(['admin']), async (req, res) =
       if (Boolean(dbProd.is_expired)) {
         throw { error: `Hindi maaaring ibenta ang expired na produkto: ${dbProd.name}.` } as ApiError;
       }
-      if (dbProd.authenticity_status === 'rejected') {
-        throw { error: `Hindi maaaring ibenta ang tinanggihang produkto: ${dbProd.name}.` } as ApiError;
+      if (!dbProd.expiry_date) {
+        throw { error: `Hindi maaaring ibenta ang ${dbProd.name} hangga't walang expiry date.` } as ApiError;
+      }
+      if (
+        dbProd.authenticity_status !== 'verified' ||
+        !String(dbProd.supplier_name || '').trim() ||
+        !String(dbProd.batch_number || '').trim()
+      ) {
+        throw { error: `Hindi maaaring ibenta ang ${dbProd.name} hangga't hindi verified ang supplier at batch/lot number nito.` } as ApiError;
       }
 
       let expectedPrice = 0;

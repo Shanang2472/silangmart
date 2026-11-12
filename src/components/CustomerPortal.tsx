@@ -269,8 +269,14 @@ export default function CustomerPortal({
         for (const requestedItem of items) {
           const product = products.find(item => String(item.id) === String(requestedItem.productId));
           if (!product) continue;
-          if (getProductExpiryStatus(product.expiryDate) === 'expired' || product.authenticityStatus === 'rejected') {
-            window.alert(`${product.name} ay hindi available dahil expired o tinanggihan ang product record.`);
+          if (
+            getProductExpiryStatus(product.expiryDate) === 'expired' ||
+            getProductExpiryStatus(product.expiryDate) === 'unknown' ||
+            product.authenticityStatus !== 'verified' ||
+            !product.supplierName?.trim() ||
+            !product.batchNumber?.trim()
+          ) {
+            window.alert(`${product.name} ay hindi available. Kailangan ng verified na supplier/batch record at valid na expiry date.`);
             continue;
           }
 
@@ -402,8 +408,14 @@ export default function CustomerPortal({
 
   // Add to cart with variant support
   const addToCart = (product: Product, variant: PackagingVariant) => {
-    if (getProductExpiryStatus(product.expiryDate) === 'expired' || product.authenticityStatus === 'rejected') {
-      alert('Hindi available ang produkto dahil expired o tinanggihan ang product record.');
+    if (
+      getProductExpiryStatus(product.expiryDate) === 'expired' ||
+      getProductExpiryStatus(product.expiryDate) === 'unknown' ||
+      product.authenticityStatus !== 'verified' ||
+      !product.supplierName?.trim() ||
+      !product.batchNumber?.trim()
+    ) {
+      alert('Hindi available ang produkto. Kailangan ng verified na supplier/batch record at valid na expiry date.');
       return;
     }
     const stock = product.stockByBranch?.[selectedBranch] ?? 0;
@@ -756,7 +768,12 @@ export default function CustomerPortal({
                         const currentImg = images[activeImgIdx] || '🛒';
                         const variants = getProductVariants(prod);
                         const expiryStatus = getProductExpiryStatus(prod.expiryDate);
-                        const isUnavailable = isOut || expiryStatus === 'expired' || prod.authenticityStatus === 'rejected';
+                        const isUnavailable = isOut ||
+                          expiryStatus === 'expired' ||
+                          expiryStatus === 'unknown' ||
+                          prod.authenticityStatus !== 'verified' ||
+                          !prod.supplierName?.trim() ||
+                          !prod.batchNumber?.trim();
 
                         return (
                           <article
@@ -790,13 +807,22 @@ export default function CustomerPortal({
                                   }`}>
                                     {prod.authenticityStatus === 'verified' ? 'Supplier/lot verified' : prod.authenticityStatus === 'rejected' ? 'Not available' : 'Unverified'}
                                   </span>
-                                  {prod.expiryDate && (
-                                    <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold ${
-                                      expiryStatus === 'expired' ? 'bg-red-100 text-red-700'
+                                  <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold ${
+                                    expiryStatus === 'expired' ? 'bg-red-100 text-red-700'
+                                      : expiryStatus === 'unknown' ? 'bg-amber-100 text-amber-700'
                                         : expiryStatus === 'expiring' ? 'bg-amber-100 text-amber-700'
                                           : 'bg-emerald-100 text-emerald-700'
-                                    }`}>
-                                      {expiryStatus === 'expired' ? 'Expired' : expiryStatus === 'expiring' ? 'Expiring soon' : 'Not expired'} · {prod.expiryDate.slice(0, 10)}
+                                  }`}>
+                                    {expiryStatus === 'expired' ? 'Expired' : expiryStatus === 'unknown' ? 'Expiry not recorded' : expiryStatus === 'expiring' ? 'Expiring soon' : 'Not expired'}{prod.expiryDate ? ` · ${prod.expiryDate.slice(0, 10)}` : ''}
+                                  </span>
+                                  {prod.supplierName && (
+                                    <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[8px] font-medium text-slate-600">
+                                      Supplier · {prod.supplierName}
+                                    </span>
+                                  )}
+                                  {prod.batchNumber && (
+                                    <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[8px] font-medium text-slate-600">
+                                      Lot · {prod.batchNumber}
                                     </span>
                                   )}
                                 </div>

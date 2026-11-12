@@ -140,9 +140,11 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res) => {
     const pkIds = (rows as any[]).map((r) => Number(r.id));
     if (pkIds.length > 0) {
       const [itemRows] = await pool.query(
-        `SELECT delivery_pk, product_id, name, quantity, price
-         FROM delivery_items
-         WHERE delivery_pk IN (?)`,
+        `SELECT di.delivery_pk, di.product_id, di.name, di.quantity, di.price,
+                p.batch_number, p.expiry_date, p.supplier_name, p.authenticity_status
+         FROM delivery_items di
+         LEFT JOIN products p ON p.id = di.product_id
+         WHERE di.delivery_pk IN (?)`,
         [pkIds]
       );
 
@@ -155,6 +157,14 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res) => {
           name: String(ir.name),
           quantity: Number(ir.quantity),
           price: Number(ir.price),
+          batchNumber: ir.batch_number ? String(ir.batch_number) : undefined,
+          expiryDate: ir.expiry_date
+            ? ir.expiry_date instanceof Date
+              ? ir.expiry_date.toISOString().slice(0, 10)
+              : String(ir.expiry_date).slice(0, 10)
+            : undefined,
+          supplierName: ir.supplier_name ? String(ir.supplier_name) : undefined,
+          authenticityStatus: ir.authenticity_status || 'unverified',
         });
       });
 
@@ -341,7 +351,9 @@ router.post('/', requireAuth, parsePaymentProofUpload, async (req: Authenticated
     // Recompute total cost and items pricing from database products & variants
     const productIds = items.map((it: any) => it.productId);
     const [dbProducts]: any = await conn.query(
-      `SELECT id, price, unit, name, authenticity_status, expiry_date < CURDATE() AS is_expired FROM products WHERE id IN (?)`,
+      `SELECT id, price, unit, name, batch_number, supplier_name, authenticity_status, expiry_date,
+              expiry_date < CURDATE() AS is_expired
+       FROM products WHERE id IN (?)`,
       [productIds]
     );
     const productMap = new Map<string, any>(dbProducts.map((p: any) => [p.id, p]));
@@ -367,8 +379,15 @@ router.post('/', requireAuth, parsePaymentProofUpload, async (req: Authenticated
       if (Boolean(dbP.is_expired)) {
         throw { error: `Hindi maaaring isama sa order ang expired na produkto: ${dbP.name}.` } as ApiError;
       }
-      if (dbP.authenticity_status === 'rejected') {
-        throw { error: `Hindi maaaring isama sa order ang tinanggihang produkto: ${dbP.name}.` } as ApiError;
+      if (!dbP.expiry_date) {
+        throw { error: `Hindi maaaring isama sa order ang ${dbP.name} hangga't walang expiry date.` } as ApiError;
+      }
+      if (
+        dbP.authenticity_status !== 'verified' ||
+        !String(dbP.supplier_name || '').trim() ||
+        !String(dbP.batch_number || '').trim()
+      ) {
+        throw { error: `Hindi maaaring isama sa order ang ${dbP.name} hangga't hindi verified ang supplier at batch/lot number nito.` } as ApiError;
       }
 
       // Use the explicit unit from the checkout payload so pricing and stock
@@ -969,7 +988,50 @@ router.post('/:id/status', requireAuth, async (req: AuthenticatedRequest, res) =
     try {
       await conn.beginTransaction();
 
-      await conn.query(`UPDATE deliveries SET ${setParts.join(', ')} WHERE id = ?`, params);
+    const requestedDeliveryStatus = body.deliveryStatus ?? body.status;
+    if (requestedDeliveryStatus === 'Out for Delivery' && requestedDeliveryStatus !== currentDeliveryStatus) {
+      const [productRows]: any = await conn.query(
+        `SELECT di.product_id, p.id, p.name, p.batch_number, p.expiry_date, p.supplier_name,
+                p.authenticity_status, p.expiry_date < CURDATE() AS is_expired
+         FROM delivery_items di
+         LEFT JOIN products p ON p.id = di.product_id
+         WHERE di.delivery_pk = ?
+         FOR UPDATE`,
+        [deliveryPk]
+      );
+      if (!productRows.length) {
+        await conn.rollback();
+        return res.status(409).json({ ok: false, error: 'Walang product traceability record para sa order; hindi ito maaaring i-dispatch.' });
+      }
+
+      const productIssues: string[] = [];
+      for (const product of productRows) {
+        const issues: string[] = [];
+        if (!product.id) issues.push('walang product record');
+        if (product.authenticity_status !== 'verified') issues.push('hindi verified ang authenticity');
+        if (!String(product.supplier_name || '').trim()) issues.push('walang supplier');
+        if (!String(product.batch_number || '').trim()) issues.push('walang batch/lot number');
+        if (!product.expiry_date) {
+          issues.push('walang expiry date');
+        } else if (Boolean(product.is_expired)) {
+          const expiryDate = product.expiry_date instanceof Date
+            ? product.expiry_date.toISOString().slice(0, 10)
+            : String(product.expiry_date).slice(0, 10);
+          issues.push(`expired (${expiryDate})`);
+        }
+        if (issues.length) productIssues.push(`${product.name || product.product_id}: ${issues.join(', ')}`);
+      }
+
+      if (productIssues.length) {
+        await conn.rollback();
+        return res.status(409).json({
+          ok: false,
+          error: `Hindi maaaring umalis ang rider. Ayusin muna ang product safety records: ${productIssues.join('; ')}.`,
+        });
+      }
+    }
+
+    await conn.query(`UPDATE deliveries SET ${setParts.join(', ')} WHERE id = ?`, params);
 
       // If transition to Cancelled, restore stock
       const deliveryStatus = body.deliveryStatus ?? body.status;
